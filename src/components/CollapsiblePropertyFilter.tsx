@@ -34,25 +34,35 @@ export const CollapsiblePropertyFilter: React.FC<CollapsiblePropertyFilterProps>
         </Flex>
       </Collapsible.Trigger>
       <Collapsible.Content>
-        <Flex wrap="wrap" gap={1} direction="column" justifyContent="center">
-          {Object.entries(values).map(([value, count]) => {
-            const checked = selectedTraits[trait]?.includes(value) ? true : false;
-            return (
-              <Flex key={value} align="center" justify={"space-between"}>
-                <Box>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleTrait(trait, value)}
-                    style={{ marginRight: 8 }}
-                  />
-                  <Text as="span" mr={2}>{value}</Text>
-                </Box>
-                <Text as="span" color="gray.400">({count})</Text>
-              </Flex>
-            );
-          })}
-        </Flex>
+        <Box
+          maxH="200px"
+          overflowY="auto"
+          p={2}
+          css={{
+            scrollbarWidth: 'none', // Firefox
+            '&::-webkit-scrollbar': { display: 'none' }, // Chrome, Safari
+          }}
+        >
+          <Flex wrap="wrap" gap={1} direction="column" justifyContent="center">
+            {Object.entries(values).map(([value, count]) => {
+              const checked = selectedTraits[trait]?.includes(value) ? true : false;
+              return (
+                <Flex key={value} align="center" justify={"space-between"}>
+                  <Box>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleTrait(trait, value)}
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text as="span" mr={2}>{value}</Text>
+                  </Box>
+                  <Text as="span" color="gray.400">({count})</Text>
+                </Flex>
+              );
+            })}
+          </Flex>
+        </Box>
       </Collapsible.Content>
     </Collapsible.Root>
   );
