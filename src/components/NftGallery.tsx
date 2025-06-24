@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo, useState } from "react";
 import {
   Box,
@@ -15,6 +17,7 @@ import {
   Portal,
 } from "@chakra-ui/react";
 import { NftData } from "../app/hooks/useNftCollection";
+import { CollapsiblePropertyFilter } from "./CollapsiblePropertyFilter";
 
 interface NftGalleryProps {
   isLoading: boolean;
@@ -147,35 +150,13 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
             <Text fontWeight="bold" fontSize="lg" mb={4}>Filter by Properties</Text>
             <Stack gap={4}>
               {Object.entries(properties).map(([trait, values]) => (
-                <Box key={trait}>
-                  <Flex justify="space-between" align="center">
-                    <Text fontWeight="bold" mb={1}>{trait} </Text>
-                    <Flex>
-                      <Text>{Object.keys(values).length}</Text>
-                      {/* ICON ARROW */}
-                    </Flex>
-                  </Flex>
-                  <Flex wrap="wrap" gap={2} direction="column">
-                    {Object.entries(values).map(([value, count]) => {
-                      const checked = selectedTraits[trait]?.includes(value);
-                      return (
-                        <Flex key={value} align="center" justify={"space-between"} mb={1}>
-                          <Box>
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleTrait(trait, value)}
-                              style={{ marginRight: 8 }}
-                            />
-                            <Text as="span" mr={2}>{value}</Text>
-                          </Box>
-                          <Text as="span" color="gray.400">({count})</Text>
-                        </Flex>
-                      );
-                    })}
-                  </Flex>
-                  <Box w="100%" h="2px" bg="gray.200" borderRadius="full" />
-                </Box>
+                <CollapsiblePropertyFilter
+                  key={trait}
+                  trait={trait}
+                  values={values}
+                  selectedTraits={selectedTraits}
+                  toggleTrait={toggleTrait}
+                />
               ))}
             </Stack>
           </Box>
