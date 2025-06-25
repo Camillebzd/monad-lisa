@@ -10,7 +10,7 @@ import { NftGallery } from "../components/NftGallery";
 
 export default function Home() {
   const [contractAddress, setContractAddress] = useState("0xC5c9425D733b9f769593bd2814B6301916f91271");
-  const { nfts, isLoading, error, isValid, refetch } = useNftCollection(contractAddress);
+  const { nfts, isLoading, error, isValid, refetch, truncatedReason } = useNftCollection(contractAddress);
   const [cooldown, setCooldown] = useState(0);
   const cooldownRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -83,6 +83,11 @@ export default function Home() {
           {generalInfoLine("Symbol", generalInfo?.symbol, isLoading)}
           {generalInfoLine("Token Type", generalInfo?.tokenType, isLoading)}
           {generalInfoLine("Total Supply", generalInfo?.totalSupply, isLoading)}
+          {truncatedReason.length > 0 && (
+            <Text color="orange.500" fontWeight="bold">
+              Warning (amount of nft reduced): {truncatedReason}
+            </Text>
+          )}
         </Box>
         {/* NFT Gallery */}
         <NftGallery isLoading={isLoading} nfts={nfts} />

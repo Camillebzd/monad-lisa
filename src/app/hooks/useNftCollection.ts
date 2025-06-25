@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import mockData from "./test.json";
 
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
@@ -91,6 +91,7 @@ interface UseNftCollectionResult {
   error: string;
   isValid: boolean;
   refetch: () => Promise<void>;
+  truncatedReason: string;
 }
 
 export function computeRarityScores(nfts: NftData[]): NftData[] {
@@ -138,7 +139,7 @@ export function computeRarityScores(nfts: NftData[]): NftData[] {
     }
   });
 
-  // sort back by tokenId
+  // sort back to original order by tokenId
   scored.sort((a, b) => parseInt(a.tokenId) - parseInt(b.tokenId));
   return scored;
 }
@@ -148,34 +149,47 @@ export function useNftCollection(contractAddress: string): UseNftCollectionResul
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isValid, setIsValid] = useState(false);
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const [truncatedReason, setTruncatedReason] = useState("");
 
   const fetchAllNfts = async () => {
     if (!contractAddress || !isValidAddress(contractAddress)) return;
     setIsLoading(true);
     setError("");
+    setTruncatedReason("");
     try {
       let allNfts: NftData[] = [];
       let pageKey: string | null = null;
+      let callCount = 0;
+      let uniquenessChecked = false;
+      let shouldContinue = true;
       do {
         const options = { method: 'GET' };
-        let url = `https://monad-testnet.g.alchemy.com/nft/v3/${ALCHEMY_KEY}/getNFTsForContract?contractAddress=${contractAddress}&withMetadata=true&limit=1000`;
+        let url = `https://monad-testnet.g.alchemy.com/nft/v3/${ALCHEMY_KEY}/getNFTsForContract?contractAddress=${contractAddress}&withMetadata=true&limit=100`;
         if (pageKey) url += `&pageKey=${pageKey}`;
         const response = await fetch(url, options);
         if (!response.ok) throw new Error("Failed to fetch NFTs");
         const data = await response.json();
+        if (!uniquenessChecked) {
+          uniquenessChecked = true;
+          // Check if all NFTs have a non-null 'properties' object in raw.metadata
+          const allHaveProperties = (data.nfts || []).every((nft: any) => nft.raw?.metadata?.properties && Array.isArray(nft.raw.metadata.properties) && nft.raw.metadata.properties.length > 0);
+          if (!allHaveProperties) {
+            setNfts(data.nfts || []);
+            setIsLoading(false);
+            setTruncatedReason("not unique");
+            return;
+          }
+        }
         allNfts = allNfts.concat(data.nfts || []);
         pageKey = data.pageKey || null;
-      } while (pageKey);
+        callCount++;
+        if (callCount >= 30 && pageKey) {
+          setTruncatedReason("too big");
+          shouldContinue = false;
+        }
+      } while (pageKey && shouldContinue);
       allNfts = computeRarityScores(allNfts);
       setNfts(allNfts);
-      console.log("Fetched NFTs:", allNfts);
-
-      // Mock data for testing
-      // Simulate network delay
-      // await new Promise(res => setTimeout(res, 500));
-      // setNfts(computeRarityScores(mockData.nfts || []));
-
       setIsLoading(false);
     } catch (err: any) {
       setError(err.message || "Unknown error");
@@ -188,18 +202,15 @@ export function useNftCollection(contractAddress: string): UseNftCollectionResul
       setIsValid(false);
       setNfts([]);
       setError("");
+      setTruncatedReason("");
       setIsLoading(false);
-      if (pollingRef.current) clearInterval(pollingRef.current);
       return;
     }
     setIsValid(true);
     setIsLoading(true);
     setError("");
     fetchAllNfts();
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
   }, [contractAddress]);
 
-  return { nfts, isLoading, error, isValid, refetch: fetchAllNfts };
+  return { nfts, isLoading, error, isValid, refetch: fetchAllNfts, truncatedReason };
 }
