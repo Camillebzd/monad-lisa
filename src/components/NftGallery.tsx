@@ -18,6 +18,7 @@ import {
 } from "@chakra-ui/react";
 import { NftData } from "../app/hooks/useNftCollection";
 import { CollapsiblePropertyFilter } from "./CollapsiblePropertyFilter";
+import { MdFilterList, MdOutlineKeyboardArrowLeft } from "react-icons/md";
 
 interface NftGalleryProps {
   isLoading: boolean;
@@ -96,8 +97,11 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
   return (
     <Box w="100%">
       {/* Top Bar */}
-      <Flex p={2} gap={4} mb={4} align="center" wrap="wrap" w="100%" bg="red">
-        <Button p={4} onClick={() => setShowFilters(!showFilters)}>Filters</Button>
+      <Flex p={2} gap={4} mb={4} align="center" wrap="wrap" w="100%">
+        <Button p={4} onClick={() => setShowFilters(!showFilters)}>
+          {!showFilters ? <MdFilterList size={20} /> : <MdOutlineKeyboardArrowLeft size={20} />}
+          Filters
+        </Button>
         <Input
           placeholder="Search by name or id"
           value={search}
@@ -139,8 +143,9 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
           <Box
             minW={["100%", "260px"]}
             maxW={["100%", "260px"]}
+            maxH={"70vh"}
+            overflowY="auto"
             bg="gray.800"
-            color="white"
             borderRadius="lg"
             p={4}
             boxShadow="md"
@@ -163,17 +168,17 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
         )}
         {/* NFT List */}
         <Box flex="1" minW={0}>
-          <Box maxH="70vh" overflowY="auto" p={1}>
+          <Box maxH="70vh" overflowY="auto" p={4} borderRadius="lg" boxShadow="md">
             {isLoading ? (
-              <SimpleGrid columns={[1, 2, 3]} gap={4}>
+              <SimpleGrid minChildWidth="180px" gap={4}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <Skeleton key={i} height="250px" borderRadius="lg" />
                 ))}
               </SimpleGrid>
             ) : (
-              <SimpleGrid columns={[1, 2, 3]} gap={4}>
+              <SimpleGrid minChildWidth="180px" gap={4} justifyItems={"center"}>
                 {filteredNfts.map(nft => (
-                  <Box key={nft.tokenId} borderWidth="1px" borderRadius="lg" p={3} boxShadow="sm">
+                  <Box key={nft.tokenId} borderWidth="1px" borderRadius="lg" p={3} boxShadow="sm" maxWidth="240px">
                     <Image
                       src={nft.image?.cachedUrl || nft.image?.pngUrl || nft.raw?.metadata?.image || "/placeholder.png"}
                       alt={nft.name || `NFT #${nft.tokenId}`}
