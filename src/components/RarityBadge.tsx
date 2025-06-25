@@ -19,8 +19,6 @@ export const RarityBadge: React.FC<RarityBadgeProps> = ({ rarityScore }) => {
     return Math.round((rank / maxRank) * 100);
   }, [rarityScore]);
   const rarityColor = useMemo(() => {
-    if (!percentile) return "gray";
-
     if (percentile < 1) return "red"; // Top 1%
     if (percentile < 5) return "orange"; // Top 5%
     if (percentile < 10) return "yellow"; // Top 10%

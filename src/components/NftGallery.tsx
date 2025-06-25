@@ -45,7 +45,7 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
   const properties = useMemo(() => {
     const propMap: { [trait: string]: { [value: string]: number } } = {};
     nfts.forEach(nft => {
-      nft.raw?.metadata?.attributes?.forEach((attr: any) => {
+      nft.raw?.metadata?.properties?.forEach((attr: any) => {
         if (!attr.trait_type || !attr.value) return;
         if (!propMap[attr.trait_type]) propMap[attr.trait_type] = {};
         propMap[attr.trait_type][attr.value] = (propMap[attr.trait_type][attr.value] || 0) + 1;
@@ -67,7 +67,7 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
     Object.entries(selectedTraits).forEach(([trait, values]) => {
       if (values.length > 0) {
         filtered = filtered.filter(nft =>
-          nft.raw?.metadata?.attributes?.some((attr: any) =>
+          nft.raw?.metadata?.properties?.some((attr: any) =>
             attr.trait_type === trait && values.includes(attr.value)
           )
         );
@@ -176,7 +176,7 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
           <Box maxH="70vh" overflowY="auto" p={4} borderRadius="lg" boxShadow="md">
             {isLoading ? (
               <SimpleGrid minChildWidth="180px" gap={4}>
-                {Array.from({ length: 6 }).map((_, i) => (
+                {Array.from({ length: 16 }).map((_, i) => (
                   <Skeleton key={i} height="250px" borderRadius="lg" />
                 ))}
               </SimpleGrid>
@@ -197,7 +197,7 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
                     <Text fontWeight="bold">{nft.name || "Unnamed NFT"}</Text>
                     <Flex justify="space-between" align="center" mt={1}>
                       <Text fontSize="sm" color="gray.500">ID: {nft.tokenId}</Text>
-                      <RarityBadge rarityScore={nft.rarityScore || { score: 0, rank: 0, maxRank: 0, percentile: 0 }} />
+                      {nft.rarityScore && <RarityBadge rarityScore={nft.rarityScore} />}
                     </Flex>
                   </Box>
                 ))}

@@ -51,7 +51,7 @@ export interface NftData {
       image: string;
       name: string;
       description?: string;
-      attributes?: Array<{
+      properties?: Array<{
         value: string;
         trait_type: string;
       }>;
@@ -101,7 +101,7 @@ export function computeRarityScores(nfts: NftData[]): NftData[] {
 
   // Count occurrences of each trait value
   nfts.forEach(nft => {
-    nft.raw?.metadata?.attributes?.forEach(attr => {
+    nft.raw?.metadata?.properties?.forEach(attr => {
       if (!attr.trait_type || attr.value == null) return;
       if (!traitValueCounts[attr.trait_type]) traitValueCounts[attr.trait_type] = {};
       traitValueCounts[attr.trait_type][attr.value] = (traitValueCounts[attr.trait_type][attr.value] || 0) + 1;
@@ -111,7 +111,7 @@ export function computeRarityScores(nfts: NftData[]): NftData[] {
   // Compute rarity scores
   let scored = nfts.map(nft => {
     let score = 0;
-    nft.raw?.metadata?.attributes?.forEach(attr => {
+    nft.raw?.metadata?.properties?.forEach(attr => {
       if (!attr.trait_type || attr.value == null) return;
       const count = traitValueCounts[attr.trait_type][attr.value] || 1;
       score += 1 / (count / total);
@@ -155,26 +155,27 @@ export function useNftCollection(contractAddress: string): UseNftCollectionResul
     setIsLoading(true);
     setError("");
     try {
-      // let allNfts: NftData[] = [];
-      // let pageKey: string | null = null;
-      // do {
-      //   const options = { method: 'GET' };
-      //   let url = `https://monad-testnet.g.alchemy.com/nft/v3/${ALCHEMY_KEY}/getNFTsForContract?contractAddress=${contractAddress}&withMetadata=true&limit=1000`;
-      //   if (pageKey) url += `&pageKey=${pageKey}`;
-      //   const response = await fetch(url, options);
-      //   if (!response.ok) throw new Error("Failed to fetch NFTs");
-      //   const data = await response.json();
-      //   allNfts = allNfts.concat(data.nfts || []);
-      //   pageKey = data.pageKey || null;
-      // } while (pageKey);
-      // setNfts(allNfts);
+      let allNfts: NftData[] = [];
+      let pageKey: string | null = null;
+      do {
+        const options = { method: 'GET' };
+        let url = `https://monad-testnet.g.alchemy.com/nft/v3/${ALCHEMY_KEY}/getNFTsForContract?contractAddress=${contractAddress}&withMetadata=true&limit=1000`;
+        if (pageKey) url += `&pageKey=${pageKey}`;
+        const response = await fetch(url, options);
+        if (!response.ok) throw new Error("Failed to fetch NFTs");
+        const data = await response.json();
+        allNfts = allNfts.concat(data.nfts || []);
+        pageKey = data.pageKey || null;
+      } while (pageKey);
+      allNfts = computeRarityScores(allNfts);
+      setNfts(allNfts);
+      console.log("Fetched NFTs:", allNfts);
 
       // Mock data for testing
       // Simulate network delay
-      await new Promise(res => setTimeout(res, 500));
-      setNfts(computeRarityScores(mockData.nfts || []));
+      // await new Promise(res => setTimeout(res, 500));
+      // setNfts(computeRarityScores(mockData.nfts || []));
 
-      // console.log("Fetched NFTs:", allNfts);
       setIsLoading(false);
     } catch (err: any) {
       setError(err.message || "Unknown error");
