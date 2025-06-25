@@ -64,12 +64,25 @@ export interface NftData {
     externalUrl: string;
     bannerImageUrl: string;
   } | null;
+  mint: {
+    mintAddress: string | null,
+    blockNumber: string | null,
+    timestamp: string | null,
+    transactionHash: string | null
+  } | null;
   tokenUri: string;
   timeLastUpdated: string;
   // acquiredAt: {
   //   blockTimestamp: string;
   //   blockNumber: string;
-  // };
+  // } | null;
+  rarityScore?: {
+    score: number;
+    normalizedScore: number;
+    rank: number;
+    maxRank: number;
+    percentile: number;
+  } | null; // will be computed, not in the API response
 }
 
 interface UseNftCollectionResult {
@@ -78,6 +91,56 @@ interface UseNftCollectionResult {
   error: string;
   isValid: boolean;
   refetch: () => Promise<void>;
+}
+
+export function computeRarityScores(nfts: NftData[]): NftData[] {
+  if (!nfts.length) return nfts;
+
+  const total = nfts.length;
+  const traitValueCounts: Record<string, Record<string, number>> = {};
+
+  // Count occurrences of each trait value
+  nfts.forEach(nft => {
+    nft.raw?.metadata?.attributes?.forEach(attr => {
+      if (!attr.trait_type || attr.value == null) return;
+      if (!traitValueCounts[attr.trait_type]) traitValueCounts[attr.trait_type] = {};
+      traitValueCounts[attr.trait_type][attr.value] = (traitValueCounts[attr.trait_type][attr.value] || 0) + 1;
+    });
+  });
+
+  // Compute rarity scores
+  let scored = nfts.map(nft => {
+    let score = 0;
+    nft.raw?.metadata?.attributes?.forEach(attr => {
+      if (!attr.trait_type || attr.value == null) return;
+      const count = traitValueCounts[attr.trait_type][attr.value] || 1;
+      score += 1 / (count / total);
+    });
+    return { ...nft, rarityScore: { score, normalizedScore: 0, rank: 0, maxRank: 0, percentile: 0 } };
+  });
+
+  // Rank NFTs by score (higher is rarer)
+  scored.sort((a, b) => (b.rarityScore?.score ?? 0) - (a.rarityScore?.score ?? 0));
+  scored.forEach((nft, i) => {
+    nft.rarityScore = {
+      ...nft.rarityScore!,
+      rank: i + 1,
+      maxRank: scored.length,
+      percentile: 100 * (1 - i / scored.length),
+    };
+  });
+
+  // Normalize scores to a 0-100 scale
+  const maxScore = Math.max(...scored.map(nft => nft.rarityScore?.score ?? 0));
+  scored.forEach(nft => {
+    if (nft.rarityScore) {
+      nft.rarityScore.normalizedScore = (nft.rarityScore.score / maxScore) * 100;
+    }
+  });
+
+  // sort back by tokenId
+  scored.sort((a, b) => parseInt(a.tokenId) - parseInt(b.tokenId));
+  return scored;
 }
 
 export function useNftCollection(contractAddress: string): UseNftCollectionResult {
@@ -109,7 +172,7 @@ export function useNftCollection(contractAddress: string): UseNftCollectionResul
       // Mock data for testing
       // Simulate network delay
       await new Promise(res => setTimeout(res, 500));
-      setNfts(mockData.nfts || []);
+      setNfts(computeRarityScores(mockData.nfts || []));
 
       // console.log("Fetched NFTs:", allNfts);
       setIsLoading(false);

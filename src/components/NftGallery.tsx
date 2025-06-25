@@ -19,6 +19,7 @@ import {
 import { NftData } from "../app/hooks/useNftCollection";
 import { CollapsiblePropertyFilter } from "./CollapsiblePropertyFilter";
 import { MdFilterList, MdOutlineKeyboardArrowLeft } from "react-icons/md";
+import { RarityBadge } from "./RarityBadge";
 
 interface NftGalleryProps {
   isLoading: boolean;
@@ -77,6 +78,10 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
       filtered = filtered.slice().sort((a, b) => parseInt(a.tokenId) - parseInt(b.tokenId));
     } else if (sort[0] === "id-desc") {
       filtered = filtered.slice().sort((a, b) => parseInt(b.tokenId) - parseInt(a.tokenId));
+    } else if (sort[0] === "recent") {
+      filtered = filtered.slice().sort((a, b) => parseInt(a?.mint?.timestamp || "0") - parseInt(b?.mint?.timestamp || "0"));
+    } else if (sort[0] === "rarity") {
+      filtered = filtered.slice().sort((a, b) => (b.rarityScore?.score || 0) - (a.rarityScore?.score || 0));
     }
     // recently minted and rarity can be implemented as needed
     return filtered;
@@ -190,7 +195,10 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
                       defaultValue="/placeholder.png"
                     />
                     <Text fontWeight="bold">{nft.name || "Unnamed NFT"}</Text>
-                    <Text fontSize="sm" color="gray.500">ID: {nft.tokenId}</Text>
+                    <Flex justify="space-between" align="center" mt={1}>
+                      <Text fontSize="sm" color="gray.500">ID: {nft.tokenId}</Text>
+                      <RarityBadge rarityScore={nft.rarityScore || { score: 0, rank: 0, maxRank: 0, percentile: 0 }} />
+                    </Flex>
                   </Box>
                 ))}
               </SimpleGrid>
