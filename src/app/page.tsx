@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Heading, Button, Text, Input, Stack, Flex, Skeleton } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNftCollection } from "./hooks/useNftCollection";
 import { NftGallery } from "../components/NftGallery";
 
@@ -11,6 +11,8 @@ import { NftGallery } from "../components/NftGallery";
 export default function Home() {
   const [contractAddress, setContractAddress] = useState("0xC5c9425D733b9f769593bd2814B6301916f91271");
   const { nfts, isLoading, error, isValid, refetch } = useNftCollection(contractAddress);
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = useRef<NodeJS.Timeout | null>(null);
 
   // Extract general info from the first NFT (if available)
   const generalInfo = nfts && nfts.length > 0 ? nfts[0].contract : null;
@@ -20,6 +22,23 @@ export default function Home() {
       <Text fontWeight="bold">{title}: {isInfoLoading ? <Skeleton as="span" display="inline-block" w="80px" h="1em" /> : <Text as="span" fontWeight="normal">{info}</Text>}</Text>
     );
   }
+
+  const handleRefresh = () => {
+    refetch();
+    setCooldown(30);
+  };
+
+  useEffect(() => {
+    if (cooldown > 0) {
+      cooldownRef.current = setTimeout(() => setCooldown(cooldown - 1), 1000);
+    } else if (cooldownRef.current) {
+      clearTimeout(cooldownRef.current);
+      cooldownRef.current = null;
+    }
+    return () => {
+      if (cooldownRef.current) clearTimeout(cooldownRef.current);
+    };
+  }, [cooldown]);
 
   return (
     <Box minH="100vh" py={10} px={{ base: 2, sm: 4, md: 8, lg: 18, xl: 36 }}>
@@ -50,11 +69,11 @@ export default function Home() {
           <Button
             width="max-content"
             p={4}
-            onClick={refetch}
+            onClick={handleRefresh}
             loading={isLoading}
-            disabled={!isValid}
+            disabled={!isValid || cooldown > 0}
           >
-            Refresh
+            {cooldown > 0 ? `Wait ${cooldown}s` : "Refresh"}
           </Button>
           {error && <Text color="red.500">{error}</Text>}
         </Flex>
