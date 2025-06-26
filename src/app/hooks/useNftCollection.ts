@@ -55,6 +55,10 @@ export interface NftData {
         value: string;
         trait_type: string;
       }>;
+      attributes?: Array<{
+        value: string;
+        trait_type: string;
+      }>; // it can be either 'properties' or 'attributes' -> normalize to properties
     };
     error: string | null;
   };
@@ -144,6 +148,20 @@ export function computeRarityScores(nfts: NftData[]): NftData[] {
   return scored;
 }
 
+// Normalize NFT properties to ensure 'properties' key is used consistently
+// This is necessary because some NFTs use 'attributes' while others use 'properties'
+function normalizeNftProperties(nfts: NftData[]): NftData[] {
+  return nfts.map(nft => {
+    const metadata = nft.raw?.metadata;
+    if (metadata) {
+      if (Array.isArray((metadata as any).attributes)) {
+        metadata.properties = (metadata as any).attributes;
+      }
+    }
+    return nft;
+  });
+}
+
 export function useNftCollection(contractAddress: string): UseNftCollectionResult {
   const [nfts, setNfts] = useState<NftData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -168,7 +186,8 @@ export function useNftCollection(contractAddress: string): UseNftCollectionResul
         if (pageKey) url += `&pageKey=${pageKey}`;
         const response = await fetch(url, options);
         if (!response.ok) throw new Error("Failed to fetch NFTs");
-        const data = await response.json();
+        let data = await response.json();
+        data.nfts = normalizeNftProperties(data.nfts || []);
         if (!uniquenessChecked) {
           uniquenessChecked = true;
           // Check if all NFTs have a non-null 'properties' object in raw.metadata
