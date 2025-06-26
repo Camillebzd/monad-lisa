@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import mockData from "./test.json";
+import { useCallback, useEffect, useState } from "react";
+// import mockData from "./test.json";
 
 const ALCHEMY_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 
@@ -114,7 +114,7 @@ export function computeRarityScores(nfts: NftData[]): NftData[] {
   });
 
   // Compute rarity scores
-  let scored = nfts.map(nft => {
+  const scored = nfts.map(nft => {
     let score = 0;
     nft.raw?.metadata?.properties?.forEach(attr => {
       if (!attr.trait_type || attr.value == null) return;
@@ -169,7 +169,7 @@ export function useNftCollection(contractAddress: string): UseNftCollectionResul
   const [isValid, setIsValid] = useState(false);
   const [truncatedReason, setTruncatedReason] = useState("");
 
-  const fetchAllNfts = async () => {
+  const fetchAllNfts = useCallback(async () => {
     if (!contractAddress || !isValidAddress(contractAddress)) return;
     setIsLoading(true);
     setError("");
@@ -186,7 +186,7 @@ export function useNftCollection(contractAddress: string): UseNftCollectionResul
         if (pageKey) url += `&pageKey=${pageKey}`;
         const response = await fetch(url, options);
         if (!response.ok) throw new Error("Failed to fetch NFTs");
-        let data = await response.json();
+        const data = await response.json();
         data.nfts = normalizeNftProperties(data.nfts || []);
         if (!uniquenessChecked) {
           uniquenessChecked = true;
@@ -214,7 +214,7 @@ export function useNftCollection(contractAddress: string): UseNftCollectionResul
       setError(err.message || "Unknown error");
       setIsLoading(false);
     }
-  };
+  }, [contractAddress]);
 
   useEffect(() => {
     if (!contractAddress || !isValidAddress(contractAddress)) {
@@ -229,7 +229,7 @@ export function useNftCollection(contractAddress: string): UseNftCollectionResul
     setIsLoading(true);
     setError("");
     fetchAllNfts();
-  }, [contractAddress]);
+  }, [contractAddress, fetchAllNfts]);
 
   return { nfts, isLoading, error, isValid, refetch: fetchAllNfts, truncatedReason };
 }

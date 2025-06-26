@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Text } from "@chakra-ui/react";
+import { Badge } from "@chakra-ui/react";
 import { useMemo } from "react";
 
 export interface RarityBadgeProps {
