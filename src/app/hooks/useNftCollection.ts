@@ -103,13 +103,35 @@ export function computeRarityScores(nfts: NftData[]): NftData[] {
 
   const total = nfts.length;
   const traitValueCounts: Record<string, Record<string, number>> = {};
+  const traitNumericValues: Record<string, number[]> = {};
+  const traitIsNumeric: Record<string, boolean> = {};
 
-  // Count occurrences of each trait value
+  // First pass: collect all values and determine if numeric
   nfts.forEach(nft => {
     nft.raw?.metadata?.properties?.forEach(attr => {
       if (!attr.trait_type || attr.value == null) return;
-      if (!traitValueCounts[attr.trait_type]) traitValueCounts[attr.trait_type] = {};
-      traitValueCounts[attr.trait_type][attr.value] = (traitValueCounts[attr.trait_type][attr.value] || 0) + 1;
+      // Check if value is numeric
+      const num = Number(attr.value);
+      if (!isNaN(num) && attr.value !== "" && attr.value !== null) {
+        traitIsNumeric[attr.trait_type] = true;
+        if (!traitNumericValues[attr.trait_type]) traitNumericValues[attr.trait_type] = [];
+        traitNumericValues[attr.trait_type].push(num);
+      } else {
+        traitIsNumeric[attr.trait_type] = traitIsNumeric[attr.trait_type] || false;
+        if (!traitValueCounts[attr.trait_type]) traitValueCounts[attr.trait_type] = {};
+        traitValueCounts[attr.trait_type][attr.value] = (traitValueCounts[attr.trait_type][attr.value] || 0) + 1;
+      }
+    });
+  });
+
+  // For numeric traits, sort and map to percentile
+  const traitNumericPercentiles: Record<string, Record<number, number>> = {};
+  Object.entries(traitNumericValues).forEach(([trait, values]) => {
+    const sorted = [...values].sort((a, b) => a - b);
+    traitNumericPercentiles[trait] = {};
+    sorted.forEach((val, i) => {
+      // Percentile: higher value = rarer (top = 100)
+      traitNumericPercentiles[trait][val] = 100 * (i + 1) / sorted.length;
     });
   });
 
@@ -118,8 +140,16 @@ export function computeRarityScores(nfts: NftData[]): NftData[] {
     let score = 0;
     nft.raw?.metadata?.properties?.forEach(attr => {
       if (!attr.trait_type || attr.value == null) return;
-      const count = traitValueCounts[attr.trait_type][attr.value] || 1;
-      score += 1 / (count / total);
+      if (traitIsNumeric[attr.trait_type]) {
+        // Numeric trait: use percentile as rarity (higher = rarer)
+        const num = Number(attr.value);
+        const percentile = traitNumericPercentiles[attr.trait_type]?.[num] || 0;
+        score += percentile;
+      } else {
+        // Categorical trait: use frequency
+        const count = traitValueCounts[attr.trait_type][attr.value] || 1;
+        score += 1 / (count / total);
+      }
     });
     return { ...nft, rarityScore: { score, normalizedScore: 0, rank: 0, maxRank: 0, percentile: 0 } };
   });
@@ -139,7 +169,7 @@ export function computeRarityScores(nfts: NftData[]): NftData[] {
   const maxScore = Math.max(...scored.map(nft => nft.rarityScore?.score ?? 0));
   scored.forEach(nft => {
     if (nft.rarityScore) {
-      nft.rarityScore.normalizedScore = (nft.rarityScore.score / maxScore) * 100;
+      nft.rarityScore.normalizedScore = maxScore ? (nft.rarityScore.score / maxScore) * 100 : 0;
     }
   });
 

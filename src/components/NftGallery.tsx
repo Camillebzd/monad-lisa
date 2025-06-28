@@ -71,7 +71,7 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
       if (values.length > 0) {
         filtered = filtered.filter(nft =>
           nft.raw?.metadata?.properties?.some((attr: any) =>
-            attr.trait_type === trait && values.includes(attr.value)
+            attr.trait_type === trait && values.includes(String(attr.value))
           )
         );
       }
