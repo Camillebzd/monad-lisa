@@ -8,6 +8,7 @@ import { NftGallery } from "../components/NftGallery";
 // Chog nft = 0xb33D7138c53e516871977094B249C8f2ab89a4F4
 // Purple Frens = 0xC5c9425D733b9f769593bd2814B6301916f91271 (properties key)
 // MonBois = 0x2FC49a061b8ec3615b5cd1806bf287909069c5Be (attributes key)
+// BrawlNads Monanimals = 0xBC2aD6e68168796781660237A2D92A0B9533FEE0
 
 export default function Home() {
   const [contractAddress, setContractAddress] = useState("");

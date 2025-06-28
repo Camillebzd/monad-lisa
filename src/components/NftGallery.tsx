@@ -20,6 +20,7 @@ import { NftData } from "../app/hooks/useNftCollection";
 import { CollapsiblePropertyFilter } from "./CollapsiblePropertyFilter";
 import { MdFilterList, MdOutlineKeyboardArrowLeft } from "react-icons/md";
 import { RarityBadge } from "./RarityBadge";
+import { NftDetailModal } from "./NftDetailModal";
 
 interface NftGalleryProps {
   isLoading: boolean;
@@ -40,6 +41,8 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
   const [sort, setSort] = useState<string[]>(["id-asc"]);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTraits, setSelectedTraits] = useState<{ [trait: string]: string[] }>({});
+  const [selectedNft, setSelectedNft] = useState<NftData | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Extract all properties (traits) and their counts
   const properties = useMemo(() => {
@@ -97,6 +100,15 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
         return { ...prev, [trait]: [...values, value] };
       }
     });
+  };
+
+  const openModal = (nft: NftData) => {
+    setSelectedNft(nft);
+    setModalOpen(true);
+  };
+  const closeModal = () => {
+    setModalOpen(false);
+    setSelectedNft(null);
   };
 
   return (
@@ -183,7 +195,7 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
             ) : (
               <SimpleGrid minChildWidth="180px" gap={4} justifyItems={"center"}>
                 {filteredNfts.map(nft => (
-                  <Box key={nft.tokenId} borderWidth="1px" borderRadius="lg" p={3} boxShadow="sm" maxWidth="240px">
+                  <Box key={nft.tokenId} borderWidth="1px" borderRadius="lg" p={3} boxShadow="sm" maxWidth="240px" _hover={{ cursor: "pointer", boxShadow: "md" }} onClick={() => openModal(nft)}>
                     <Image
                       src={nft.image?.cachedUrl || nft.image?.pngUrl || nft.raw?.metadata?.image || "/placeholder.png"}
                       alt={nft.name || `NFT #${nft.tokenId}`}
@@ -201,6 +213,7 @@ export const NftGallery: React.FC<NftGalleryProps> = ({ isLoading, nfts }) => {
                     </Flex>
                   </Box>
                 ))}
+                <NftDetailModal isOpen={modalOpen} onClose={closeModal} nft={selectedNft} />
               </SimpleGrid>
             )}
           </Box>
